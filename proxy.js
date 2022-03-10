@@ -1,0 +1,60 @@
+// include dependencies
+import express from "express";
+import { createProxyMiddleware } from 'http-proxy-middleware';
+
+// proxy middleware options
+const options = {
+  target: 'https://services-rc.kachingretail.com', // target host
+  changeOrigin: true, // needed for virtual hosted sites
+  ws: true, // proxy websockets
+  pathRewrite: {
+    '^/api': '', // remove base path
+  },
+  logLevel: "debug",
+  onProxyReq: addJwtIdentity,
+  router: {
+    // when request.headers.host == 'dev.localhost:3000',
+    // override target 'http://www.example.org' to 'http://localhost:8000'
+    // ex. localhost:3000/hanshake/sokething->localhost:1234/handshake/something
+    // first match only, from top to bottom
+  //  'localhost:3000/handshake'     : 'http://localhost:1234',
+    //'localhost:3000/organization'     : 'http://localhost:20001',
+  //  'localhost:3000/payments/connectors/klarna-checkout'     : 'http://localhost:2061',
+  //  'localhost:3000/payments/connectors/klarna'     : 'http://localhost:2034',
+  //  'localhost:3000/payments/connectors/fortnox-orders'     : 'http://localhost:1234',
+    'localhost:3000/payments/connectors/swedbank-checkout'     : 'http://localhost:1234',
+    'localhost:3000/3.0/order'     : 'http://localhost:20001',
+    // 'localhost:3000/payments/connectors'     : 'http://localhost:1234',
+    //'localhost:3000/store'     : 'http://localhost:20000',
+    'localhost:3000/payments'     : 'http://localhost:20003',
+    //'localhost:3000/catalogs'     : 'http://localhost:1234',
+     'localhost:3000/infrastructure': 'http://localhost:20000',
+     'localhost:3000/token': 'https://api-dev.yabie.com'
+   }
+};
+
+// create the proxy (without context)
+const exampleProxy = createProxyMiddleware(options);
+
+// mount `exampleProxy` in web server
+const app = express();
+app.use('/', exampleProxy);
+app.listen(3000);
+
+
+const identity =
+  "eyJhbGciOiJIUzI1NiJ9.eyJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL29yZ2FuaXphdGlvbiI6ImUxNzgyN2FjLTg0N2QtNDIyMi1hYjk3LTcwOTM1YWQ4ZGU3OSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvcm9sZSI6WyJJbnRlcm5hbC9ldmVyeW9uZSIsIkludGVybmFsL3NlbGZzaWdudXAiLCJJbnRlcm5hbC9rYWNoaW5nX3NlbGxlciJdLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2FwcGxpY2F0aW9udGllciI6IlVubGltaXRlZCIsImlzcyI6IndzbzIub3JnL3Byb2R1Y3RzL2FtIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9lbmR1c2VyVGVuYW50SWQiOiItMTIzNCIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvYXBwbGljYXRpb25VVUlkIjoiZjFmMTMyMzctNzI4YS00MThkLWFkYzAtZWJlNTlkZmE5NTU0IiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9jcmVhdGVkIjoiMjAyMC0wOC0wNlQxMzowMTo1MSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvb3JnYW5pemF0aW9uSWQiOiJlMTc4MjdhYy04NDdkLTQyMjItYWI5Ny03MDkzNWFkOGRlNzkiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3N1YnNjcmliZXIiOiJzbmQtcmMta2FjaGluZyIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvZW1haWxhZGRyZXNzIjoibmVtYW5qYUB5YWJpZS5jb20iLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2xhc3RuYW1lIjoiWmlrYSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvc3NuIjoiaHdWTGxEN0crQ1k0WkpCQUkvL25pQT09IiwiZXhwIjoxNjA1MDA1ODAyLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2FwcGxpY2F0aW9uaWQiOiI4IiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9wYXJ0bmVySWQiOiJ1bmRlZmluZWQiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3VzZXJ0eXBlIjoiQVBQTElDQVRJT05fVVNFUiIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvcGluQ29kZSI6IjEyMzQiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2FwaWNvbnRleHQiOiIvYXBpL2NhdGFsb2dzLzMuMSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdXNlcnByaW5jaXBhbCI6InNlbGxlckBjYXJhbWVsbm0uc2UiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3VzZXJpZCI6IjIzMzk1MjA5LTc0MDEtNDM3NS1iZWQ5LWMzOThkYTViNmYxMiIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdXNlcm5hbWUiOiJzZWxsZXJAY2FyYW1lbG5tLnNlIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9rZXl0eXBlIjoiUFJPRFVDVElPTiIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdmVyc2lvbiI6IjMuMSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvYXBwbGljYXRpb25uYW1lIjoiaU9TLUthY2hpbmctQXBwIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9lbmR1c2VyIjoic2VsbGVyQGNhcmFtZWxubS5zZUBjYXJib24uc3VwZXIiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2dpdmVubmFtZSI6IlNlbGxlciIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvbmlja25hbWUiOiJzZWxsZXJAY2FyYW1lbG5tLnJjIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9yZXNvdXJjZVR5cGUiOiJVc2VyIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9tb2RpZmllZCI6IjIwMjAtMTEtMDlUMTQ6MDA6MzIiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2Fzc29jaWF0ZWRTdG9yZSI6ImFsbC1zdG9yZXMiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3VzZXJQZXJtaXNzaW9ucyI6WyJoaXN0b3JpYy1zYWxlcyIsInRvdGFsLXNhbGVzIiwieC1yZXBvcnQiLCJ6LXJlcG9ydCIsImpvdXJuYWwiLCJkaXNjb3VudHMiLCJyZXR1cm5zIiwibG9naW4taW5zaWdodHMiLCJsb2dpbi1wb3MiLCJsb2FucyJdLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3BhcnRuZXJOYW1lIjoia2FjaGluZy1pbnRlcm5hbCIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdGllciI6IlVubGltaXRlZCIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdXNlci1pZCI6ImQ4NWJlYmZkLTYyNDQtNGJhNi1iZDQ1LWU4NzY1YmYyZmVmNSJ9.gpmHeBFh5wRO2g_40VU8OLvm116sQ_t1_Umx3YNpeIE";
+
+function addJwtIdentity(proxyReq) {
+  proxyReq.setHeader('Kaching-JWT-Assertion', getIdentityToken("jurgen-burger"));
+}
+
+function getIdentityToken(organizationNameKey) {
+  switch (organizationNameKey) {
+    case 'jurgen-burger':
+      return "eyJhbGciOiJIUzI1NiJ9.eyJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL29yZ2FuaXphdGlvbiI6ImUxNzgyN2FjLTg0N2QtNDIyMi1hYjk3LTcwOTM1YWQ4ZGU3OSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvcm9sZSI6WyJJbnRlcm5hbC9ldmVyeW9uZSIsIkludGVybmFsL3NlbGZzaWdudXAiLCJJbnRlcm5hbC9rYWNoaW5nX3NlbGxlciJdLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2FwcGxpY2F0aW9udGllciI6IlVubGltaXRlZCIsImlzcyI6IndzbzIub3JnL3Byb2R1Y3RzL2FtIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9lbmR1c2VyVGVuYW50SWQiOiItMTIzNCIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvYXBwbGljYXRpb25VVUlkIjoiZjFmMTMyMzctNzI4YS00MThkLWFkYzAtZWJlNTlkZmE5NTU0IiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9jcmVhdGVkIjoiMjAyMC0wOC0wNlQxMzowMTo1MSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvb3JnYW5pemF0aW9uSWQiOiJlMTc4MjdhYy04NDdkLTQyMjItYWI5Ny03MDkzNWFkOGRlNzkiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3N1YnNjcmliZXIiOiJzbmQtcmMta2FjaGluZyIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvZW1haWxhZGRyZXNzIjoibmVtYW5qYUB5YWJpZS5jb20iLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2xhc3RuYW1lIjoiWmlrYSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvc3NuIjoiaHdWTGxEN0crQ1k0WkpCQUkvL25pQT09IiwiZXhwIjoxNjA1MDA1ODAyLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2FwcGxpY2F0aW9uaWQiOiI4IiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9wYXJ0bmVySWQiOiJ1bmRlZmluZWQiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3VzZXJ0eXBlIjoiQVBQTElDQVRJT05fVVNFUiIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvcGluQ29kZSI6IjEyMzQiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2FwaWNvbnRleHQiOiIvYXBpL2NhdGFsb2dzLzMuMSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdXNlcnByaW5jaXBhbCI6InNlbGxlckBjYXJhbWVsbm0uc2UiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3VzZXJpZCI6IjIzMzk1MjA5LTc0MDEtNDM3NS1iZWQ5LWMzOThkYTViNmYxMiIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdXNlcm5hbWUiOiJzZWxsZXJAY2FyYW1lbG5tLnNlIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9rZXl0eXBlIjoiUFJPRFVDVElPTiIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdmVyc2lvbiI6IjMuMSIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvYXBwbGljYXRpb25uYW1lIjoiaU9TLUthY2hpbmctQXBwIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9lbmR1c2VyIjoic2VsbGVyQGNhcmFtZWxubS5zZUBjYXJib24uc3VwZXIiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2dpdmVubmFtZSI6IlNlbGxlciIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvbmlja25hbWUiOiJzZWxsZXJAY2FyYW1lbG5tLnJjIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9yZXNvdXJjZVR5cGUiOiJVc2VyIiwiaHR0cDovL3dzbzIub3JnL2NsYWltcy9tb2RpZmllZCI6IjIwMjAtMTEtMDlUMTQ6MDA6MzIiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL2Fzc29jaWF0ZWRTdG9yZSI6ImFsbC1zdG9yZXMiLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3VzZXJQZXJtaXNzaW9ucyI6WyJoaXN0b3JpYy1zYWxlcyIsInRvdGFsLXNhbGVzIiwieC1yZXBvcnQiLCJ6LXJlcG9ydCIsImpvdXJuYWwiLCJkaXNjb3VudHMiLCJyZXR1cm5zIiwibG9naW4taW5zaWdodHMiLCJsb2dpbi1wb3MiLCJsb2FucyJdLCJodHRwOi8vd3NvMi5vcmcvY2xhaW1zL3BhcnRuZXJOYW1lIjoia2FjaGluZy1pbnRlcm5hbCIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdGllciI6IlVubGltaXRlZCIsImh0dHA6Ly93c28yLm9yZy9jbGFpbXMvdXNlci1pZCI6ImQ4NWJlYmZkLTYyNDQtNGJhNi1iZDQ1LWU4NzY1YmYyZmVmNSJ9.gpmHeBFh5wRO2g_40VU8OLvm116sQ_t1_Umx3YNpeIE";
+    default:
+      return identity;
+  }
+}
+//docker run -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password -p 27017:27017 mongo-local
